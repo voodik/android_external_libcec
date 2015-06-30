@@ -2,7 +2,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -19,7 +19,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301  USA
  *
  *
  * Alternatively, you can license this library under a commercial license,
@@ -31,10 +32,12 @@
  *     http://www.pulse-eight.net/
  */
 
+#include "env.h"
 #include <set>
 #include <map>
-#include "lib/platform/threads/mutex.h"
-#include "lib/platform/util/StdString.h"
+#include <string>
+#include "platform/threads/mutex.h"
+#include <memory>
 
 namespace CEC
 {
@@ -46,6 +49,7 @@ namespace CEC
   class CCECRecordingDevice;
   class CCECTuner;
   class CCECTV;
+  typedef std::shared_ptr<CCECClient> CECClientPtr;
 
   class CResponse
   {
@@ -128,9 +132,9 @@ namespace CEC
 
     virtual bool                  TransmitOSDString(const cec_logical_address destination, cec_display_control duration, const char *strMessage, bool bIsReply);
 
-    virtual CStdString            GetCurrentOSDName(void);
-    virtual CStdString            GetOSDName(const cec_logical_address initiator, bool bUpdate = false);
-    virtual void                  SetOSDName(CStdString strName);
+    virtual std::string           GetCurrentOSDName(void);
+    virtual std::string           GetOSDName(const cec_logical_address initiator, bool bUpdate = false);
+    virtual void                  SetOSDName(const std::string& strName);
     virtual bool                  RequestOSDName(const cec_logical_address source, bool bWaitForResponse = true);
     virtual bool                  TransmitOSDName(const cec_logical_address destination, bool bIsReply);
 
@@ -186,7 +190,7 @@ namespace CEC
 
     virtual bool                  TryLogicalAddress(cec_version libCECSpecVersion = CEC_VERSION_1_4);
 
-    CCECClient *                  GetClient(void);
+    CECClientPtr                  GetClient(void);
     void                          SignalOpcode(cec_opcode opcode);
     bool                          WaitForOpcode(cec_opcode opcode);
 
@@ -209,7 +213,7 @@ namespace CEC
     bool NeedsPoll(void);
 
     cec_device_type       m_type;
-    CStdString            m_strDeviceName;
+    std::string           m_strDeviceName;
     uint16_t              m_iPhysicalAddress;
     uint16_t              m_iStreamPath;
     cec_logical_address   m_iLogicalAddress;

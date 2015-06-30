@@ -2,7 +2,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2012 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -31,8 +31,7 @@
  *     http://www.pulse-eight.net/
  */
 
-#include "env.h"
-#include "lib/platform/os.h"
+#include "../os.h"
 
 #if defined(__APPLE__)
 #include <mach/mach_time.h>
@@ -40,7 +39,6 @@
 #elif defined(__WINDOWS__)
 #include <time.h>
 #else
-#include <time.h>
 #include <sys/time.h>
 #endif
 

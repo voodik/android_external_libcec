@@ -8,7 +8,7 @@ LOCAL_MODULE_TAGS = optional
 LOCAL_CPP_EXTENSION := .cpp
 
 LOCAL_SDK_VERSION := 9
-LOCAL_NDK_STL_VARIANT := stlport_static
+LOCAL_NDK_STL_VARIANT := gnustl_static
 
 LOCAL_SRC_FILES := lib/CECProcessor.cpp \
                     lib/LibCEC.cpp \
@@ -40,12 +40,15 @@ LOCAL_SRC_FILES := lib/CECProcessor.cpp \
                     lib/platform/posix/serialport.cpp \
                     lib/platform/posix/os-edid.cpp \
                     lib/platform/adl/adl-edid.cpp \
-                    lib/platform/nvidia/nv-edid.cpp
+                    lib/platform/nvidia/nv-edid.cpp \
+                    lib/util/fstrcmp.c \
+                    lib/util/StringUtils.cpp
+
 
 LOCAL_SHARED_LIBRARIES := libdl
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/lib $(LOCAL_PATH)/include
-LOCAL_CFLAGS := -O2
+LOCAL_CFLAGS := -std=gnu++11 -O2 -pthread -frtti -fexceptions
 LOCAL_CFLAGS += -DHAVE_P8_USB -DHAVE_EXYNOS_API
 
 include $(BUILD_SHARED_LIBRARY)

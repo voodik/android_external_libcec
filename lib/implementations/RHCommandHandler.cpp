@@ -1,7 +1,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -18,7 +18,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301  USA
  *
  *
  * Alternatively, you can license this library under a commercial license,
@@ -33,10 +34,10 @@
 #include "env.h"
 #include "RHCommandHandler.h"
 
-#include "lib/devices/CECBusDevice.h"
-#include "lib/CECProcessor.h"
-#include "lib/LibCEC.h"
-#include "lib/CECClient.h"
+#include "devices/CECBusDevice.h"
+#include "CECProcessor.h"
+#include "LibCEC.h"
+#include "CECClient.h"
 
 using namespace CEC;
 
@@ -60,6 +61,5 @@ int CRHCommandHandler::HandleDeviceVendorCommandWithId(const cec_command &comman
   {
     // ignore unknown vendor commands sent by onkyo devices, bugzid: 2559
   }
-  return CEC_ABORT_REASON_INVALID_OPERAND;
-
+  return CEC_ABORT_REASON_REFUSED;
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -18,7 +18,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301  USA
  *
  *
  * Alternatively, you can license this library under a commercial license,
@@ -39,9 +40,8 @@ extern "C" {
 #include <bcm_host.h>
 }
 
-#include "lib/CECTypeUtils.h"
-#include "lib/LibCEC.h"
-#include "lib/platform/util/StdString.h"
+#include "CECTypeUtils.h"
+#include "LibCEC.h"
 #include "RPiCECAdapterMessageQueue.h"
 
 using namespace CEC;
@@ -258,8 +258,8 @@ int CRPiCECAdapterCommunication::InitHostCEC(void)
   if ((iResult = vchiq_initialise(&vchiq_instance)) != VCHIQ_SUCCESS)
   {
     LIB_CEC->AddLog(CEC_LOG_ERROR, "%s - vchiq_initialise failed (%d)", __FUNCTION__, iResult);
-    CStdString strError;
-    strError.Format("%s - vchiq_initialise failed (%d)", __FUNCTION__, iResult);
+    std::string strError;
+    strError = StringUtils::Format("%s - vchiq_initialise failed (%d)", __FUNCTION__, iResult);
     m_strError = strError;
     return iResult;
   }
@@ -268,8 +268,8 @@ int CRPiCECAdapterCommunication::InitHostCEC(void)
   if ((iResult = vchi_initialise(&m_vchi_instance)) != VCHIQ_SUCCESS)
   {
     LIB_CEC->AddLog(CEC_LOG_ERROR, "%s - vchi_initialise failed (%d)", __FUNCTION__, iResult);
-    CStdString strError;
-    strError.Format("%s - vchi_initialise failed (%d)", __FUNCTION__, iResult);
+    std::string strError;
+    strError = StringUtils::Format("%s - vchi_initialise failed (%d)", __FUNCTION__, iResult);
     m_strError = strError;
     return iResult;
   }
@@ -283,8 +283,8 @@ int CRPiCECAdapterCommunication::InitHostCEC(void)
   if ((iResult = vchi_connect(&m_vchi_connection, 1, m_vchi_instance)) != VCHIQ_SUCCESS)
   {
     LIB_CEC->AddLog(CEC_LOG_ERROR, "%s - vchi_connect failed (%d)", __FUNCTION__, iResult);
-    CStdString strError;
-    strError.Format("%s - vchi_connect failed (%d)", __FUNCTION__, iResult);
+    std::string strError;
+    strError = StringUtils::Format("%s - vchi_connect failed (%d)", __FUNCTION__, iResult);
     m_strError = strError;
     return iResult;
   }

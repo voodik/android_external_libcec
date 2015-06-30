@@ -2,7 +2,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -19,7 +19,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301  USA
  *
  *
  * Alternatively, you can license this library under a commercial license,
@@ -31,7 +32,8 @@
  *     http://www.pulse-eight.net/
  */
 
-#include "lib/platform/util/StdString.h"
+#include "env.h"
+#include "platform/util/StringUtils.h"
 
 namespace CEC
 {
@@ -524,143 +526,29 @@ namespace CEC
         return "Harman/Kardon";
       case CEC_VENDOR_PULSE_EIGHT:
         return "Pulse Eight";
+      case CEC_VENDOR_GOOGLE:
+        return "Google";
       default:
         return "Unknown";
       }
     }
 
-    static const char *ToString(const cec_client_version version)
+    static std::string VersionToString(uint32_t version)
     {
-      switch (version)
+      uint32_t major, minor, patch;
+      if (version <= 0x2200)
       {
-      case CEC_CLIENT_VERSION_PRE_1_5:
-        return "pre-1.5";
-      case CEC_CLIENT_VERSION_1_5_0:
-        return "1.5.0";
-      case CEC_CLIENT_VERSION_1_5_1:
-        return "1.5.1";
-      case CEC_CLIENT_VERSION_1_5_2:
-        return "1.5.2";
-      case CEC_CLIENT_VERSION_1_5_3:
-        return "1.5.3";
-      case CEC_CLIENT_VERSION_1_6_0:
-        return "1.6.0";
-      case CEC_CLIENT_VERSION_1_6_1:
-        return "1.6.1";
-      case CEC_CLIENT_VERSION_1_6_2:
-        return "1.6.2";
-      case CEC_CLIENT_VERSION_1_6_3:
-        return "1.6.3";
-      case CEC_CLIENT_VERSION_1_7_0:
-        return "1.7.0";
-      case CEC_CLIENT_VERSION_1_7_1:
-        return "1.7.1";
-      case CEC_CLIENT_VERSION_1_7_2:
-        return "1.7.2";
-      case CEC_CLIENT_VERSION_1_8_0:
-        return "1.8.0";
-      case CEC_CLIENT_VERSION_1_8_1:
-        return "1.8.1";
-      case CEC_CLIENT_VERSION_1_8_2:
-        return "1.8.2";
-      case CEC_CLIENT_VERSION_1_9_0:
-        return "1.9.0";
-      case CEC_CLIENT_VERSION_1_99_0:
-        return "2.0.0-pre";
-      case CEC_CLIENT_VERSION_2_0_0:
-        return "2.0.0";
-      case CEC_CLIENT_VERSION_2_0_1:
-        return "2.0.1";
-      case CEC_CLIENT_VERSION_2_0_2:
-        return "2.0.2";
-      case CEC_CLIENT_VERSION_2_0_3:
-        return "2.0.3";
-      case CEC_CLIENT_VERSION_2_0_4:
-        return "2.0.4";
-      case CEC_CLIENT_VERSION_2_0_5:
-        return "2.0.5";
-      case CEC_CLIENT_VERSION_2_1_0:
-        return "2.1.0";
-      case CEC_CLIENT_VERSION_2_1_1:
-        return "2.1.1";
-      case CEC_CLIENT_VERSION_2_1_2:
-        return "2.1.2";
-      case CEC_CLIENT_VERSION_2_1_3:
-        return "2.1.3";
-      case CEC_CLIENT_VERSION_2_1_4:
-        return "2.1.4";
-      case CEC_CLIENT_VERSION_2_2_0:
-        return "2.2.0";
-      default:
-        return "Unknown";
+        major = LIBCEC_UINT_TO_VERSION_MAJOR_OLD(version);
+        minor = LIBCEC_UINT_TO_VERSION_MINOR_OLD(version);
+        patch = LIBCEC_UINT_TO_VERSION_PATCH_OLD(version);
       }
-    }
-
-    static const char *ToString(const cec_server_version version)
-    {
-      switch (version)
+      else
       {
-      case CEC_SERVER_VERSION_PRE_1_5:
-        return "pre-1.5";
-      case CEC_SERVER_VERSION_1_5_0:
-        return "1.5.0";
-      case CEC_SERVER_VERSION_1_5_1:
-        return "1.5.1";
-      case CEC_SERVER_VERSION_1_5_2:
-        return "1.5.2";
-      case CEC_SERVER_VERSION_1_5_3:
-        return "1.5.3";
-      case CEC_SERVER_VERSION_1_6_0:
-        return "1.6.0";
-      case CEC_SERVER_VERSION_1_6_1:
-        return "1.6.1";
-      case CEC_SERVER_VERSION_1_6_2:
-        return "1.6.2";
-      case CEC_SERVER_VERSION_1_6_3:
-        return "1.6.3";
-      case CEC_SERVER_VERSION_1_7_0:
-        return "1.7.0";
-      case CEC_SERVER_VERSION_1_7_1:
-        return "1.7.1";
-      case CEC_SERVER_VERSION_1_7_2:
-        return "1.7.2";
-      case CEC_SERVER_VERSION_1_8_0:
-        return "1.8.0";
-      case CEC_SERVER_VERSION_1_8_1:
-        return "1.8.1";
-      case CEC_SERVER_VERSION_1_8_2:
-        return "1.8.2";
-      case CEC_SERVER_VERSION_1_9_0:
-        return "1.9.0";
-      case CEC_SERVER_VERSION_1_99_0:
-        return "2.0.0-pre";
-      case CEC_SERVER_VERSION_2_0_0:
-        return "2.0.0";
-      case CEC_SERVER_VERSION_2_0_1:
-        return "2.0.1";
-      case CEC_SERVER_VERSION_2_0_2:
-        return "2.0.2";
-      case CEC_SERVER_VERSION_2_0_3:
-        return "2.0.3";
-      case CEC_SERVER_VERSION_2_0_4:
-        return "2.0.4";
-      case CEC_SERVER_VERSION_2_0_5:
-        return "2.0.5";
-      case CEC_SERVER_VERSION_2_1_0:
-        return "2.1.0";
-      case CEC_SERVER_VERSION_2_1_1:
-        return "2.1.1";
-      case CEC_SERVER_VERSION_2_1_2:
-        return "2.1.2";
-      case CEC_SERVER_VERSION_2_1_3:
-        return "2.1.3";
-      case CEC_SERVER_VERSION_2_1_4:
-        return "2.1.4";
-      case CEC_SERVER_VERSION_2_2_0:
-        return "2.2.0";
-      default:
-        return "Unknown";
+        major = LIBCEC_UINT_TO_VERSION_MAJOR(version);
+        minor = LIBCEC_UINT_TO_VERSION_MINOR(version);
+        patch = LIBCEC_UINT_TO_VERSION_PATCH(version);
       }
+      return StringUtils::Format("%u.%u.%u", major, minor, patch);
     }
 
     static const char *ToString(const cec_abort_reason reason)
@@ -893,14 +781,14 @@ namespace CEC
       return true;
     }
 
-    static CStdString ToString(const cec_command& command)
+    static std::string ToString(const cec_command& command)
     {
-      CStdString dataStr;
-      dataStr.Format(">> %1x%1x", command.initiator, command.destination);
+      std::string dataStr;
+      dataStr = StringUtils::Format(">> %1x%1x", command.initiator, command.destination);
       if (command.opcode_set == 1)
-        dataStr.AppendFormat(":%02x", command.opcode);
+        dataStr += StringUtils::Format(":%02x", command.opcode);
       for (uint8_t iPtr = 0; iPtr < command.parameters.size; iPtr++)
-        dataStr.AppendFormat(":%02x", (unsigned int)command.parameters[iPtr]);
+        dataStr += StringUtils::Format(":%02x", (unsigned int)command.parameters[iPtr]);
       return dataStr;
     }
   };

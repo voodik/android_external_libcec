@@ -2,7 +2,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -19,7 +19,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301  USA
  *
  *
  * Alternatively, you can license this library under a commercial license,
@@ -31,6 +32,7 @@
  *     http://www.pulse-eight.net/
  */
 
+#include "env.h"
 #include <string>
 
 #include "platform/threads/threads.h"
@@ -39,6 +41,7 @@
 #include "adapter/AdapterCommunication.h"
 #include "devices/CECDeviceMap.h"
 #include "CECInputBuffer.h"
+#include <memory>
 
 namespace CEC
 {
@@ -53,16 +56,24 @@ namespace CEC
   class CCECClient;
   class CCECProcessor;
   class CCECStandbyProtection;
+  typedef std::shared_ptr<CCECClient> CECClientPtr;
+
+  typedef struct
+  {
+    CECClientPtr    client;
+    cec_device_type from;
+    cec_device_type to;
+  } device_type_change_t;
 
   class CCECAllocateLogicalAddress : public PLATFORM::CThread
   {
   public:
-    CCECAllocateLogicalAddress(CCECProcessor* processor, CCECClient* client);
+    CCECAllocateLogicalAddress(CCECProcessor* processor, CECClientPtr client);
     void* Process(void);
 
   private:
     CCECProcessor* m_processor;
-    CCECClient*    m_client;
+    CECClientPtr   m_client;
   };
 
   class CCECProcessor : public PLATFORM::CThread, public IAdapterCommunicationCallback
@@ -75,12 +86,14 @@ namespace CEC
       void *Process(void);
       void Close(void);
 
-      bool RegisterClient(CCECClient *client);
-      bool UnregisterClient(CCECClient *client);
+      bool RegisterClient(CCECClient* client);
+      bool RegisterClient(CECClientPtr client);
+      bool UnregisterClient(CCECClient* client);
+      bool UnregisterClient(CECClientPtr client);
       void UnregisterClients(void);
       uint16_t GetPhysicalAddressFromEeprom(void);
-      CCECClient *GetPrimaryClient(void);
-      CCECClient *GetClient(const cec_logical_address address);
+      CECClientPtr GetPrimaryClient(void);
+      CECClientPtr GetClient(const cec_logical_address address);
 
       bool                  OnCommandReceived(const cec_command &command);
       void                  HandleLogicalAddressLost(cec_logical_address oldAddress);
@@ -110,6 +123,7 @@ namespace CEC
       bool                  PowerOnDevices(const cec_logical_address initiator, const CECDEVICEVEC &devices);
       bool                  PowerOnDevice(const cec_logical_address initiator, cec_logical_address address);
 
+      void ChangeDeviceType(CECClientPtr client, cec_device_type from, cec_device_type to);
       bool SetDeckInfo(cec_deck_info info, bool bSendUpdate = true);
       bool ActivateSource(uint16_t iStreamPath);
       void SetActiveSource(bool bSetTo, bool bClientUnregistered);
@@ -146,7 +160,7 @@ namespace CEC
       bool IsRunningLatestFirmware(void);
       void SwitchMonitoring(bool bSwitchTo);
 
-      bool AllocateLogicalAddresses(CCECClient* client);
+      bool AllocateLogicalAddresses(CECClientPtr client);
 
       uint16_t GetAdapterVendorId(void) const;
       uint16_t GetAdapterProductId(void) const;
@@ -174,11 +188,12 @@ namespace CEC
       uint64_t                                    m_iLastTransmission;
       CCECInputBuffer                             m_inBuffer;
       CCECDeviceMap *                             m_busDevices;
-      std::map<cec_logical_address, CCECClient *> m_clients;
+      std::map<cec_logical_address, CECClientPtr> m_clients;
       bool                                        m_bMonitor;
       CCECAllocateLogicalAddress*                 m_addrAllocator;
       bool                                        m_bStallCommunication;
       CCECStandbyProtection*                      m_connCheck;
+      std::vector<device_type_change_t>           m_deviceTypeChanges;
   };
 
   class CCECStandbyProtection : public PLATFORM::CThread

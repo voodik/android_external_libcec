@@ -2,7 +2,7 @@
  * This file is part of the libCEC(R) library.
  *
  * libCEC Exynos Code is Copyright (C) 2014 Valentin Manea
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -40,12 +40,10 @@
 #include "ExynosCEC.h"
 #include "ExynosCECAdapterCommunication.h"
 
-#include "lib/CECTypeUtils.h"
-#include "lib/LibCEC.h"
-#include "lib/platform/util/StdString.h"
-#include "lib/platform/util/buffer.h"
+#include "CECTypeUtils.h"
+#include "LibCEC.h"
+#include "platform/util/buffer.h"
 
-using namespace std;
 using namespace CEC;
 using namespace PLATFORM;
 
@@ -161,15 +159,8 @@ cec_vendor_id CExynosCECAdapterCommunication::GetVendorId(void)
 
 uint16_t CExynosCECAdapterCommunication::GetPhysicalAddress(void)
 {
+  uint16_t phys_addr = CEC_DEFAULT_PADDR;
 
-  char* addr_string = getenv("CEC_HDMI_PORT");
-  if (addr_string == NULL)
-    return CEC_DEFAULT_PHYSICAL_ADDRESS;
-  int addr_int = atoi(addr_string);
-  if (addr_int == 0)
-    return CEC_DEFAULT_PHYSICAL_ADDRESS;
-
-/*
   FILE *f = fopen(CEC_PADDR_NAME, "r");
   if(f) {
     if(fscanf(f, "%hu", &phys_addr) != 1)
@@ -178,8 +169,6 @@ uint16_t CExynosCECAdapterCommunication::GetPhysicalAddress(void)
     fclose(f);
   }
   return phys_addr;
-*/
-return 0x1000 * addr_int;
 }
 
 

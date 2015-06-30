@@ -1,7 +1,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -18,7 +18,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301  USA
  *
  *
  * Alternatively, you can license this library under a commercial license,
@@ -33,8 +34,7 @@
 #include "env.h"
 #include "USBCECAdapterMessage.h"
 
-#include "lib/LibCEC.h"
-#include "lib/platform/util/StdString.h"
+#include "LibCEC.h"
 
 using namespace CEC;
 using namespace PLATFORM;
@@ -96,7 +96,7 @@ CCECAdapterMessage::CCECAdapterMessage(const cec_command &command, uint8_t iLine
 
 std::string CCECAdapterMessage::ToString(void) const
 {
-  CStdString strMsg;
+  std::string strMsg;
   if (Size() == 0)
   {
     strMsg = "empty message";
@@ -113,26 +113,26 @@ std::string CCECAdapterMessage::ToString(void) const
       {
         uint32_t iLine = (Size() >= 4) ? (At(2) << 8) | At(3) : 0;
         uint32_t iTime = (Size() >= 8) ? (At(4) << 24) | (At(5) << 16) | (At(6) << 8) | At(7) : 0;
-        strMsg.AppendFormat(" line:%u", iLine);
-        strMsg.AppendFormat(" time:%u", iTime);
+        strMsg += StringUtils::Format(" line:%u", iLine);
+        strMsg += StringUtils::Format(" time:%u", iTime);
       }
       break;
     case MSGCODE_FRAME_START:
       if (Size() >= 3)
-        strMsg.AppendFormat(" initiator:%1x destination:%1x ack:%s %s", Initiator(), Destination(), IsACK() ? "high" : "low", IsEOM() ? "eom" : "");
+        strMsg += StringUtils::Format(" initiator:%1x destination:%1x ack:%s %s", Initiator(), Destination(), IsACK() ? "high" : "low", IsEOM() ? "eom" : "");
       break;
     case MSGCODE_FRAME_DATA:
       if (Size() >= 3)
-        strMsg.AppendFormat(" %02x %s", At(2), IsEOM() ? "eom" : "");
+        strMsg += StringUtils::Format(" %02x %s", At(2), IsEOM() ? "eom" : "");
       break;
     default:
       if (Size() >= 2 && (Message() == MSGCODE_COMMAND_ACCEPTED || Message() == MSGCODE_COMMAND_REJECTED))
-        strMsg.AppendFormat(": %s", ToString((cec_adapter_messagecode)At(2)));
+        strMsg += StringUtils::Format(": %s", ToString((cec_adapter_messagecode)At(2)));
       else
       {
         for (uint8_t iPtr = 2; iPtr < Size(); iPtr++)
           if (At(iPtr) != MSGEND)
-            strMsg.AppendFormat(" %02x", At(iPtr));
+            strMsg += StringUtils::Format(" %02x", At(iPtr));
       }
       break;
     }

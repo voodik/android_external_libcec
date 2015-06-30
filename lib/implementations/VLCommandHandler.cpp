@@ -1,7 +1,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -18,7 +18,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301  USA
  *
  *
  * Alternatively, you can license this library under a commercial license,
@@ -33,12 +34,12 @@
 #include "env.h"
 #include "VLCommandHandler.h"
 
-#include "lib/devices/CECBusDevice.h"
-#include "lib/devices/CECPlaybackDevice.h"
-#include "lib/devices/CECTV.h"
-#include "lib/CECProcessor.h"
-#include "lib/LibCEC.h"
-#include "lib/CECClient.h"
+#include "devices/CECBusDevice.h"
+#include "devices/CECPlaybackDevice.h"
+#include "devices/CECTV.h"
+#include "CECProcessor.h"
+#include "LibCEC.h"
+#include "CECClient.h"
 
 #define VL_POWER_CHANGE 0x20
 #define VL_POWERED_UP   0x00
@@ -80,7 +81,7 @@ bool CVLCommandHandler::InitHandler(void)
         m_processor->GetPrimaryClient()->GetCurrentConfiguration(config);
         if (config.iDoubleTapTimeout50Ms == 0)
         {
-          config.iDoubleTapTimeout50Ms = config.clientVersion >= CEC_CLIENT_VERSION_2_2_0 ? CEC_DOUBLE_TAP_TIMEOUT_50_MS : CEC_DOUBLE_TAP_TIMEOUT_MS_OLD;
+          config.iDoubleTapTimeout50Ms = config.clientVersion >= LIBCEC_VERSION_TO_UINT(2, 2, 0) ? CEC_DOUBLE_TAP_TIMEOUT_50_MS : CEC_DOUBLE_TAP_TIMEOUT_MS_OLD;
           m_processor->GetPrimaryClient()->SetConfiguration(config);
         }
 
@@ -89,7 +90,10 @@ bool CVLCommandHandler::InitHandler(void)
       }
 
       if (primary->GetType() == CEC_DEVICE_TYPE_RECORDING_DEVICE)
-        return m_processor->GetPrimaryClient()->ChangeDeviceType(CEC_DEVICE_TYPE_RECORDING_DEVICE, CEC_DEVICE_TYPE_PLAYBACK_DEVICE);
+      {
+        m_processor->ChangeDeviceType(m_processor->GetPrimaryClient(), CEC_DEVICE_TYPE_RECORDING_DEVICE, CEC_DEVICE_TYPE_PLAYBACK_DEVICE);
+        return true;
+      }
     }
   }
 

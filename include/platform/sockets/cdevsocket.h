@@ -31,8 +31,8 @@
  *     http://www.pulse-eight.net/
  */
 
-#include "lib/platform/os.h"
-#include "lib/platform/util/buffer.h"
+#include "../os.h"
+#include "../util/buffer.h"
 
 #include <string>
 #include <stdint.h>

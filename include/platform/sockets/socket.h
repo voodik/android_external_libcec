@@ -2,7 +2,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2012 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -31,14 +31,13 @@
  *     http://www.pulse-eight.net/
  */
 
-#include "lib/platform/threads/mutex.h"
+#include "../threads/mutex.h"
 
 #if defined(__WINDOWS__)
-#include "lib/platform/windows/os-socket.h"
+#include "../windows/os-socket.h"
 #else
-#include "lib/platform/posix/os-socket.h"
+#include "../posix/os-socket.h"
 #endif
-
 #include <string>
 
 // Common socket operations
@@ -87,17 +86,15 @@ namespace PLATFORM
 
     virtual std::string GetName(void)
     {
-      std::string strName;
-      strName = m_strName;
-      return strName;
+      return m_strName;
     }
 
   protected:
-    _SType     m_socket;
+    _SType      m_socket;
     std::string m_strError;
     std::string m_strName;
-    int        m_iError;
-    CMutex     m_mutex;
+    int         m_iError;
+    CMutex      m_mutex;
   };
 
   template <typename _Socket>
@@ -110,7 +107,6 @@ namespace PLATFORM
 
     virtual ~CProtectedSocket(void)
     {
-      Close();
       delete m_socket;
     }
 
@@ -136,10 +132,10 @@ namespace PLATFORM
 
     virtual void Shutdown(void)
     {
-      if (m_socket && WaitReady())
+      CLockObject lock(m_mutex);
+      if (m_socket)
       {
         m_socket->Shutdown();
-        MarkReady();
       }
     }
 

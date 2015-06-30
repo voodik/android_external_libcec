@@ -1,7 +1,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -18,7 +18,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301  USA
  *
  *
  * Alternatively, you can license this library under a commercial license,
@@ -33,20 +34,20 @@
 #include "env.h"
 #include "CECBusDevice.h"
 
-#include "lib/CECProcessor.h"
-#include "lib/CECClient.h"
-#include "lib/implementations/ANCommandHandler.h"
-#include "lib/implementations/CECCommandHandler.h"
-#include "lib/implementations/SLCommandHandler.h"
-#include "lib/implementations/VLCommandHandler.h"
-#include "lib/implementations/PHCommandHandler.h"
-#include "lib/implementations/RLCommandHandler.h"
-#include "lib/implementations/RHCommandHandler.h"
-#include "lib/implementations/AQCommandHandler.h"
-#include "lib/LibCEC.h"
-#include "lib/CECTypeUtils.h"
-#include "lib/platform/util/timeutils.h"
-#include "lib/platform/util/util.h"
+#include "CECProcessor.h"
+#include "CECClient.h"
+#include "implementations/ANCommandHandler.h"
+#include "implementations/CECCommandHandler.h"
+#include "implementations/SLCommandHandler.h"
+#include "implementations/VLCommandHandler.h"
+#include "implementations/PHCommandHandler.h"
+#include "implementations/RLCommandHandler.h"
+#include "implementations/RHCommandHandler.h"
+#include "implementations/AQCommandHandler.h"
+#include "LibCEC.h"
+#include "CECTypeUtils.h"
+#include "platform/util/timeutils.h"
+#include "platform/util/util.h"
 
 #include "CECAudioSystem.h"
 #include "CECPlaybackDevice.h"
@@ -54,7 +55,6 @@
 #include "CECTuner.h"
 #include "CECTV.h"
 
-using namespace std;
 using namespace CEC;
 using namespace PLATFORM;
 
@@ -166,8 +166,8 @@ CCECBusDevice::CCECBusDevice(CCECProcessor *processor, cec_logical_address iLogi
 
 CCECBusDevice::~CCECBusDevice(void)
 {
-  DELETE_AND_NULL(m_handler);
-  DELETE_AND_NULL(m_waitForResponse);
+  SAFE_DELETE(m_handler);
+  SAFE_DELETE(m_waitForResponse);
 }
 
 bool CCECBusDevice::ReplaceHandler(bool bActivateSource /* = true */)
@@ -195,7 +195,7 @@ bool CCECBusDevice::ReplaceHandler(bool bActivateSource /* = true */)
         int8_t  iTransmitRetries     = m_handler->m_iTransmitRetries;
         int64_t iActiveSourcePending = m_handler->m_iActiveSourcePending;
 
-        DELETE_AND_NULL(m_handler);
+        SAFE_DELETE(m_handler);
 
         switch (m_vendor)
         {
@@ -516,20 +516,20 @@ bool CCECBusDevice::TransmitOSDString(const cec_logical_address destination, cec
   return bReturn;
 }
 
-CStdString CCECBusDevice::GetCurrentOSDName(void)
+std::string CCECBusDevice::GetCurrentOSDName(void)
 {
   CLockObject lock(m_mutex);
   return m_strDeviceName;
 }
 
-CStdString CCECBusDevice::GetOSDName(const cec_logical_address initiator, bool bUpdate /* = false */)
+std::string CCECBusDevice::GetOSDName(const cec_logical_address initiator, bool bUpdate /* = false */)
 {
   bool bIsPresent(GetStatus() == CEC_DEVICE_STATUS_PRESENT);
   bool bRequestUpdate(false);
   {
     CLockObject lock(m_mutex);
     bRequestUpdate = bIsPresent &&
-        (bUpdate || m_strDeviceName.Equals(ToString(m_iLogicalAddress))) &&
+        (bUpdate || m_strDeviceName == ToString(m_iLogicalAddress)) &&
         m_type != CEC_DEVICE_TYPE_TV;
   }
 
@@ -543,7 +543,7 @@ CStdString CCECBusDevice::GetOSDName(const cec_logical_address initiator, bool b
   return m_strDeviceName;
 }
 
-void CCECBusDevice::SetOSDName(CStdString strName)
+void CCECBusDevice::SetOSDName(const std::string& strName)
 {
   CLockObject lock(m_mutex);
   if (m_strDeviceName != strName)
@@ -570,7 +570,7 @@ bool CCECBusDevice::RequestOSDName(const cec_logical_address initiator, bool bWa
 
 bool CCECBusDevice::TransmitOSDName(const cec_logical_address destination, bool bIsReply)
 {
-  CStdString strDeviceName;
+  std::string strDeviceName;
   {
     CLockObject lock(m_mutex);
     LIB_CEC->AddLog(CEC_LOG_DEBUG, "<< %s (%X) -> %s (%X): OSD name '%s'", GetLogicalAddressName(), m_iLogicalAddress, ToString(destination), destination, m_strDeviceName.c_str());
@@ -1023,6 +1023,17 @@ bool CCECBusDevice::ActivateSource(uint64_t iDelay /* = 0 */)
   bool bReturn(true);
   if (iDelay == 0)
   {
+    /** some AVRs fail to be powered up by the TV when it powers up. power up the AVR explicitly */
+    if (m_iLogicalAddress != CECDEVICE_AUDIOSYSTEM)
+    {
+      CCECBusDevice* audioSystem(m_processor->GetDevice(CECDEVICE_AUDIOSYSTEM));
+      if (audioSystem && audioSystem->IsPresent() && audioSystem->GetPowerStatus(m_iLogicalAddress) != CEC_POWER_STATUS_ON)
+      {
+        LIB_CEC->AddLog(CEC_LOG_DEBUG, "powering up the AVR");
+        audioSystem->PowerOn(m_iLogicalAddress);
+      }
+    }
+
     LIB_CEC->AddLog(CEC_LOG_DEBUG, "sending active source message for '%s'", ToString(m_iLogicalAddress));
     bReturn = m_handler->ActivateSource();
   }
@@ -1085,7 +1096,7 @@ void CCECBusDevice::MarkAsActiveSource(void)
   if (bWasActivated && IsHandledByLibCEC())
     m_processor->SetActiveSource(true, false);
 
-  CCECClient *client = GetClient();
+  CECClientPtr client = GetClient();
   if (client)
     client->SourceActivated(m_iLogicalAddress);
 }
@@ -1107,7 +1118,7 @@ void CCECBusDevice::MarkAsInactiveSource(bool bClientUnregistered /* = false */)
   {
     if (IsHandledByLibCEC())
       m_processor->SetActiveSource(false, bClientUnregistered);
-    CCECClient *client = GetClient();
+    CECClientPtr client = GetClient();
     if (client)
       client->SourceDeactivated(m_iLogicalAddress);
   }
@@ -1456,7 +1467,7 @@ bool CCECBusDevice::TryLogicalAddress(cec_version libCECSpecVersion /* = CEC_VER
   return false;
 }
 
-CCECClient *CCECBusDevice::GetClient(void)
+CECClientPtr CCECBusDevice::GetClient(void)
 {
   return m_processor->GetClient(m_iLogicalAddress);
 }

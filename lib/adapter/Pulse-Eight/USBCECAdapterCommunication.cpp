@@ -1,7 +1,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -18,7 +18,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301  USA
  *
  *
  * Alternatively, you can license this library under a commercial license,
@@ -37,16 +38,15 @@
 #include "USBCECAdapterMessageQueue.h"
 #include "USBCECAdapterMessage.h"
 #include "USBCECAdapterDetection.h"
-#include "lib/platform/sockets/serialport.h"
-#include "lib/platform/util/timeutils.h"
-#include "lib/platform/util/util.h"
-#include "lib/platform/util/edid.h"
-#include "lib/platform/adl/adl-edid.h"
-#include "lib/platform/nvidia/nv-edid.h"
-#include "lib/LibCEC.h"
-#include "lib/CECProcessor.h"
+#include "platform/sockets/serialport.h"
+#include "platform/util/timeutils.h"
+#include "platform/util/util.h"
+#include "platform/util/edid.h"
+#include "platform/adl/adl-edid.h"
+#include "platform/nvidia/nv-edid.h"
+#include "LibCEC.h"
+#include "CECProcessor.h"
 
-using namespace std;
 using namespace CEC;
 using namespace PLATFORM;
 
@@ -85,14 +85,14 @@ CUSBCECAdapterCommunication::CUSBCECAdapterCommunication(IAdapterCommunicationCa
 CUSBCECAdapterCommunication::~CUSBCECAdapterCommunication(void)
 {
   Close();
-  DELETE_AND_NULL(m_commands);
-  DELETE_AND_NULL(m_adapterMessageQueue);
-  DELETE_AND_NULL(m_port);
+  SAFE_DELETE(m_commands);
+  SAFE_DELETE(m_adapterMessageQueue);
+  SAFE_DELETE(m_port);
 }
 
 void CUSBCECAdapterCommunication::ResetMessageQueue(void)
 {
-  DELETE_AND_NULL(m_adapterMessageQueue);
+  SAFE_DELETE(m_adapterMessageQueue);
   m_adapterMessageQueue = new CCECAdapterMessageQueue(this);
   m_adapterMessageQueue->CreateThread();
 }
@@ -120,13 +120,13 @@ bool CUSBCECAdapterCommunication::Open(uint32_t iTimeoutMs /* = CEC_DEFAULT_CONN
     ResetMessageQueue();
 
     /* try to open the connection */
-    CStdString strError;
+    std::string strError;
     CTimeout timeout(iTimeoutMs);
     while (!bConnectionOpened && timeout.TimeLeft() > 0)
     {
       if ((bConnectionOpened = m_port->Open(timeout.TimeLeft())) == false)
       {
-        strError.Format("error opening serial port '%s': %s", m_port->GetName().c_str(), m_port->GetError().c_str());
+        strError = StringUtils::Format("error opening serial port '%s': %s", m_port->GetName().c_str(), m_port->GetError().c_str());
         Sleep(250);
       }
       /* and retry every 250ms until the timeout passed */
@@ -135,7 +135,7 @@ bool CUSBCECAdapterCommunication::Open(uint32_t iTimeoutMs /* = CEC_DEFAULT_CONN
     /* return false when we couldn't connect */
     if (!bConnectionOpened)
     {
-      LIB_CEC->AddLog(CEC_LOG_ERROR, strError);
+      LIB_CEC->AddLog(CEC_LOG_ERROR, strError.c_str());
 
       if (m_port->GetErrorNumber() == EACCES)
       {
@@ -226,10 +226,10 @@ void CUSBCECAdapterCommunication::Close(void)
   /* stop and delete the write thread */
   if (m_eepromWriteThread)
     m_eepromWriteThread->Stop();
-  DELETE_AND_NULL(m_eepromWriteThread);
+  SAFE_DELETE(m_eepromWriteThread);
 
   /* stop and delete the ping thread */
-  DELETE_AND_NULL(m_pingThread);
+  SAFE_DELETE(m_pingThread);
 
   /* close and delete the com port connection */
   if (m_port)

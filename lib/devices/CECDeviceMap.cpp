@@ -1,7 +1,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -18,7 +18,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301  USA
  *
  *
  * Alternatively, you can license this library under a commercial license,
@@ -38,10 +39,9 @@
 #include "CECRecordingDevice.h"
 #include "CECTuner.h"
 #include "CECTV.h"
-#include "lib/CECProcessor.h"
-#include "lib/CECTypeUtils.h"
+#include "CECProcessor.h"
+#include "CECTypeUtils.h"
 
-using namespace std;
 using namespace CEC;
 
 CCECDeviceMap::CCECDeviceMap(CCECProcessor *processor) :
@@ -52,29 +52,29 @@ CCECDeviceMap::CCECDeviceMap(CCECProcessor *processor) :
     switch(iPtr)
     {
     case CECDEVICE_AUDIOSYSTEM:
-      m_busDevices.insert(make_pair<cec_logical_address, CCECBusDevice *>((cec_logical_address)iPtr, new CCECAudioSystem(processor, (cec_logical_address) iPtr)));
+      m_busDevices.insert(std::make_pair<cec_logical_address, CCECBusDevice *>((cec_logical_address)iPtr, new CCECAudioSystem(processor, (cec_logical_address) iPtr)));
       break;
     case CECDEVICE_PLAYBACKDEVICE1:
     case CECDEVICE_PLAYBACKDEVICE2:
     case CECDEVICE_PLAYBACKDEVICE3:
-      m_busDevices.insert(make_pair<cec_logical_address, CCECBusDevice *>((cec_logical_address)iPtr, new CCECPlaybackDevice(processor, (cec_logical_address) iPtr)));
+      m_busDevices.insert(std::make_pair<cec_logical_address, CCECBusDevice *>((cec_logical_address)iPtr, new CCECPlaybackDevice(processor, (cec_logical_address) iPtr)));
       break;
     case CECDEVICE_RECORDINGDEVICE1:
     case CECDEVICE_RECORDINGDEVICE2:
     case CECDEVICE_RECORDINGDEVICE3:
-      m_busDevices.insert(make_pair<cec_logical_address, CCECBusDevice *>((cec_logical_address)iPtr, new CCECRecordingDevice(processor, (cec_logical_address) iPtr)));
+      m_busDevices.insert(std::make_pair<cec_logical_address, CCECBusDevice *>((cec_logical_address)iPtr, new CCECRecordingDevice(processor, (cec_logical_address) iPtr)));
       break;
     case CECDEVICE_TUNER1:
     case CECDEVICE_TUNER2:
     case CECDEVICE_TUNER3:
     case CECDEVICE_TUNER4:
-      m_busDevices.insert(make_pair<cec_logical_address, CCECBusDevice *>((cec_logical_address)iPtr, new CCECTuner(processor, (cec_logical_address) iPtr)));
+      m_busDevices.insert(std::make_pair<cec_logical_address, CCECBusDevice *>((cec_logical_address)iPtr, new CCECTuner(processor, (cec_logical_address) iPtr)));
       break;
     case CECDEVICE_TV:
-      m_busDevices.insert(make_pair<cec_logical_address, CCECBusDevice *>((cec_logical_address)iPtr, new CCECTV(processor, (cec_logical_address) iPtr)));
+      m_busDevices.insert(std::make_pair<cec_logical_address, CCECBusDevice *>((cec_logical_address)iPtr, new CCECTV(processor, (cec_logical_address) iPtr)));
       break;
     default:
-      m_busDevices.insert(make_pair<cec_logical_address, CCECBusDevice *>((cec_logical_address)iPtr, new CCECBusDevice(processor, (cec_logical_address) iPtr)));
+      m_busDevices.insert(std::make_pair<cec_logical_address, CCECBusDevice *>((cec_logical_address)iPtr, new CCECBusDevice(processor, (cec_logical_address) iPtr)));
       break;
     }
   }

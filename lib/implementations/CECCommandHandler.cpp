@@ -1,7 +1,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -18,7 +18,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301  USA
  *
  *
  * Alternatively, you can license this library under a commercial license,
@@ -33,17 +34,16 @@
 #include "env.h"
 #include "CECCommandHandler.h"
 
-#include "lib/devices/CECBusDevice.h"
-#include "lib/devices/CECAudioSystem.h"
-#include "lib/devices/CECPlaybackDevice.h"
-#include "lib/CECClient.h"
-#include "lib/CECProcessor.h"
-#include "lib/LibCEC.h"
-#include "lib/CECTypeUtils.h"
-#include "lib/platform/util/util.h"
+#include "devices/CECBusDevice.h"
+#include "devices/CECAudioSystem.h"
+#include "devices/CECPlaybackDevice.h"
+#include "CECClient.h"
+#include "CECProcessor.h"
+#include "LibCEC.h"
+#include "CECTypeUtils.h"
+#include "platform/util/util.h"
 
 using namespace CEC;
-using namespace std;
 using namespace PLATFORM;
 
 #define LIB_CEC     m_busDevice->GetProcessor()->GetLib()
@@ -249,8 +249,33 @@ int CCECCommandHandler::HandleDeviceCecVersion(const cec_command &command)
   return CEC_ABORT_REASON_INVALID_OPERAND;
 }
 
-int CCECCommandHandler::HandleDeviceVendorCommandWithId(const cec_command & UNUSED(command))
+int CCECCommandHandler::HandleDeviceVendorCommandWithId(const cec_command& command)
 {
+  if (command.parameters.size < 3)
+    return CEC_ABORT_REASON_INVALID_OPERAND;
+
+  CCECBusDevice *device = GetDevice((cec_logical_address) command.initiator);
+  uint64_t iVendorId = ((uint64_t)command.parameters[0] << 16) +
+                       ((uint64_t)command.parameters[1] << 8) +
+                        (uint64_t)command.parameters[2];
+
+  if (device && device->GetCurrentVendorId() == CEC_VENDOR_UNKNOWN && device->SetVendorId(iVendorId))
+  {
+    /** vendor id changed, parse command after the handler has been replaced */
+    if (HasSpecificHandler((cec_vendor_id)iVendorId))
+    {
+      LIB_CEC->AddLog(CEC_LOG_TRAFFIC, ">> process after replacing vendor handler: %s", ToString(command).c_str());
+      m_processor->OnCommandReceived(command);
+      return COMMAND_HANDLED;
+    }
+  }
+
+  if (iVendorId == CEC_VENDOR_PIONEER && command.initiator == CECDEVICE_AUDIOSYSTEM)
+  {
+    /** ignore vendor commands from pioneer AVRs */
+    return CEC_ABORT_REASON_REFUSED;
+  }
+
   return CEC_ABORT_REASON_INVALID_OPERAND;
 }
 
@@ -414,17 +439,17 @@ int CCECCommandHandler::HandleMenuRequest(const cec_command &command)
     CCECBusDevice *device = GetDevice(command.destination);
     if (device)
     {
-      CCECClient *client = device->GetClient();
+      CECClientPtr client = device->GetClient();
       if (client)
       {
         if (command.parameters[0] == CEC_MENU_REQUEST_TYPE_ACTIVATE)
         {
-          if (client->MenuStateChanged(CEC_MENU_STATE_ACTIVATED) == 1)
+          if (client->QueueMenuStateChanged(CEC_MENU_STATE_ACTIVATED) == 1)
             device->SetMenuState(CEC_MENU_STATE_ACTIVATED);
         }
         else if (command.parameters[0] == CEC_MENU_REQUEST_TYPE_DEACTIVATE)
         {
-          if (client->MenuStateChanged(CEC_MENU_STATE_DEACTIVATED) == 1)
+          if (client->QueueMenuStateChanged(CEC_MENU_STATE_DEACTIVATED) == 1)
             device->SetMenuState(CEC_MENU_STATE_DEACTIVATED);
         }
       }
@@ -496,7 +521,7 @@ int CCECCommandHandler::HandleRequestActiveSource(const cec_command &command)
     LIB_CEC->AddLog(CEC_LOG_DEBUG, ">> %i requests active source", (uint8_t) command.initiator);
     m_processor->GetDevice(command.initiator)->SetPowerStatus(CEC_POWER_STATUS_ON);
 
-    vector<CCECBusDevice *> devices;
+    std::vector<CCECBusDevice *> devices;
     for (size_t iDevicePtr = 0; iDevicePtr < GetMyDevices(devices); iDevicePtr++)
       devices[iDevicePtr]->TransmitActiveSource(true);
   }
@@ -568,7 +593,7 @@ int CCECCommandHandler::HandleSetOSDName(const cec_command &command)
         buf[iPtr] = (char)command.parameters[iPtr];
       buf[command.parameters.size] = 0;
 
-      CStdString strName(buf);
+      std::string strName(buf);
       device->SetOSDName(strName);
 
       return COMMAND_HANDLED;
@@ -697,7 +722,7 @@ int CCECCommandHandler::HandleUserControlPressed(const cec_command &command)
   if (!device)
     return CEC_ABORT_REASON_INVALID_OPERAND;
 
-  CCECClient *client = device->GetClient();
+  CECClientPtr client = device->GetClient();
   if (client)
     client->SetCurrentButton((cec_user_control_code) command.parameters[0]);
 
@@ -743,7 +768,7 @@ int CCECCommandHandler::HandleUserControlRelease(const cec_command &command)
       !m_processor->IsHandledByLibCEC(command.destination))
     return CEC_ABORT_REASON_NOT_IN_CORRECT_MODE_TO_RESPOND;
 
-  CCECClient *client = m_processor->GetClient(command.destination);
+  CECClientPtr client = m_processor->GetClient(command.destination);
   if (client)
     client->AddKey();
 
@@ -776,7 +801,7 @@ void CCECCommandHandler::UnhandledCommand(const cec_command &command, const cec_
   }
 }
 
-size_t CCECCommandHandler::GetMyDevices(vector<CCECBusDevice *> &devices) const
+size_t CCECCommandHandler::GetMyDevices(std::vector<CCECBusDevice *> &devices) const
 {
   size_t iReturn(0);
 
@@ -827,7 +852,7 @@ void CCECCommandHandler::SetPhysicalAddress(cec_logical_address iAddress, uint16
   if (!m_processor->IsHandledByLibCEC(iAddress))
   {
     CCECBusDevice *otherDevice = m_processor->GetDeviceByPhysicalAddress(iNewAddress);
-    CCECClient *client = otherDevice ? otherDevice->GetClient() : NULL;
+    CECClientPtr client = otherDevice ? otherDevice->GetClient() : CECClientPtr();
 
     CCECBusDevice *device = m_processor->GetDevice(iAddress);
     if (device)
@@ -1294,10 +1319,10 @@ void CCECCommandHandler::ScheduleActivateSource(uint64_t iDelay)
 void CCECCommandHandler::RequestEmailFromCustomer(const cec_command& command)
 {
   bool bInserted(false);
-  map<cec_opcode, vector<cec_command> >::iterator it = m_logsRequested.find(command.opcode);
+  std::map<cec_opcode, std::vector<cec_command> >::iterator it = m_logsRequested.find(command.opcode);
   if (it != m_logsRequested.end())
   {
-    for (vector<cec_command>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); it2++)
+    for (std::vector<cec_command>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); it2++)
     {
       // we already logged this one
       if ((*it2).parameters == command.parameters)
@@ -1310,7 +1335,7 @@ void CCECCommandHandler::RequestEmailFromCustomer(const cec_command& command)
 
   if (!bInserted)
   {
-    vector<cec_command> commands;
+    std::vector<cec_command> commands;
     commands.push_back(command);
     m_logsRequested.insert(make_pair(command.opcode, commands));
   }

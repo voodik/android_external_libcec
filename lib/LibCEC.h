@@ -2,7 +2,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -19,7 +19,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301  USA
  *
  *
  * Alternatively, you can license this library under a commercial license,
@@ -31,16 +32,19 @@
  *     http://www.pulse-eight.net/
  */
 
+#include "env.h"
 #include <string>
 #include "cec.h"
 #include "platform/util/buffer.h"
 #include "CECTypeUtils.h"
+#include <memory>
 
 namespace CEC
 {
   class CAdapterCommunication;
   class CCECProcessor;
   class CCECClient;
+  typedef std::shared_ptr<CCECClient> CECClientPtr;
 
   class CLibCEC : public ICECAdapter
   {
@@ -71,7 +75,7 @@ namespace CEC
       bool SwitchMonitoring(bool bEnable);
       cec_version GetDeviceCecVersion(cec_logical_address iAddress);
       bool GetDeviceMenuLanguage(cec_logical_address iAddress, cec_menu_language *language);
-      uint64_t GetDeviceVendorId(cec_logical_address iAddress);
+      uint32_t GetDeviceVendorId(cec_logical_address iAddress);
       uint16_t GetDevicePhysicalAddress(cec_logical_address iAddress);
       cec_power_status GetDevicePowerStatus(cec_logical_address iAddress);
       bool PollDevice(cec_logical_address iAddress);
@@ -97,21 +101,21 @@ namespace CEC
       void RescanActiveDevices(void);
       bool IsLibCECActiveSource(void);
 
-      const char *ToString(const cec_menu_state state)         { return CCECTypeUtils::ToString(state); }
-      const char *ToString(const cec_version version)          { return CCECTypeUtils::ToString(version); }
-      const char *ToString(const cec_power_status status)      { return CCECTypeUtils::ToString(status); }
-      const char *ToString(const cec_logical_address address)  { return CCECTypeUtils::ToString(address); }
-      const char *ToString(const cec_deck_control_mode mode)   { return CCECTypeUtils::ToString(mode); }
-      const char *ToString(const cec_deck_info status)         { return CCECTypeUtils::ToString(status); }
-      const char *ToString(const cec_opcode opcode)            { return CCECTypeUtils::ToString(opcode); }
-      const char *ToString(const cec_system_audio_status mode) { return CCECTypeUtils::ToString(mode); }
-      const char *ToString(const cec_audio_status status)      { return CCECTypeUtils::ToString(status); }
-      const char *ToString(const cec_vendor_id vendor)         { return CCECTypeUtils::ToString(vendor); }
-      const char *ToString(const cec_client_version version)   { return CCECTypeUtils::ToString(version); }
-      const char *ToString(const cec_server_version version)   { return CCECTypeUtils::ToString(version); }
-      const char *ToString(const cec_device_type type)         { return CCECTypeUtils::ToString(type); }
-      const char *ToString(const cec_user_control_code key)    { return CCECTypeUtils::ToString(key); }
-      const char *ToString(const cec_adapter_type type)        { return CCECTypeUtils::ToString(type); }
+      const char* ToString(const cec_menu_state state)         { return CCECTypeUtils::ToString(state); }
+      const char* ToString(const cec_version version)          { return CCECTypeUtils::ToString(version); }
+      const char* ToString(const cec_power_status status)      { return CCECTypeUtils::ToString(status); }
+      const char* ToString(const cec_logical_address address)  { return CCECTypeUtils::ToString(address); }
+      const char* ToString(const cec_deck_control_mode mode)   { return CCECTypeUtils::ToString(mode); }
+      const char* ToString(const cec_deck_info status)         { return CCECTypeUtils::ToString(status); }
+      const char* ToString(const cec_opcode opcode)            { return CCECTypeUtils::ToString(opcode); }
+      const char* ToString(const cec_system_audio_status mode) { return CCECTypeUtils::ToString(mode); }
+      const char* ToString(const cec_audio_status status)      { return CCECTypeUtils::ToString(status); }
+      const char* ToString(const cec_device_type type)         { return CCECTypeUtils::ToString(type); }
+      const char* ToString(const cec_user_control_code key)    { return CCECTypeUtils::ToString(key); }
+      const char* ToString(const cec_adapter_type type)        { return CCECTypeUtils::ToString(type); }
+      std::string VersionToString(uint32_t version)            { return CCECTypeUtils::VersionToString(version); }
+      void PrintVersion(uint32_t version, char* buf, size_t bufSize);
+      const char* VendorIdToString(uint32_t vendor)            { return CCECTypeUtils::ToString((cec_vendor_id)vendor); }
 
       static cec_device_type GetType(cec_logical_address address);
       static uint16_t GetMaskForType(cec_logical_address address);
@@ -125,9 +129,8 @@ namespace CEC
       void Alert(const libcec_alert type, const libcec_parameter &param);
 
       static bool IsValidPhysicalAddress(uint16_t iPhysicalAddress);
-      CCECClient *RegisterClient(libcec_configuration &configuration);
-      void UnregisterClients(void);
-      std::vector<CCECClient *> GetClients(void) { return m_clients; };
+      CECClientPtr RegisterClient(libcec_configuration &configuration);
+      std::vector<CECClientPtr> GetClients(void) { return m_clients; };
       const char *GetLibInfo(void);
       void InitVideoStandalone(void);
       uint16_t GetAdapterVendorId(void) const;
@@ -138,12 +141,14 @@ namespace CEC
       uint8_t AudioUnmute(void);
       uint8_t AudioStatus(void);
 
+      cec_command CommandFromString(const char* strCommand);
+
       CCECProcessor *           m_cec;
 
     protected:
       int64_t                   m_iStartTime;
       PLATFORM::CMutex          m_mutex;
-      CCECClient *              m_client;
-      std::vector<CCECClient *> m_clients;
+      CECClientPtr              m_client;
+      std::vector<CECClientPtr> m_clients;
   };
 };

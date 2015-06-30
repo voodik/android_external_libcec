@@ -1,7 +1,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -18,7 +18,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301  USA
  *
  *
  * Alternatively, you can license this library under a commercial license,
@@ -41,12 +42,12 @@
 #include "devices/CECPlaybackDevice.h"
 #include "devices/CECTV.h"
 #include "platform/util/timeutils.h"
-#include "platform/util/StdString.h"
 #include "platform/util/util.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "CECClient.h"
 
-using namespace std;
 using namespace CEC;
 using namespace PLATFORM;
 
@@ -59,11 +60,17 @@ CLibCEC::CLibCEC(void) :
 
 CLibCEC::~CLibCEC(void)
 {
-  // unregister all clients client
-  UnregisterClients();
+  // unregister all clients
+  if (m_cec && m_cec->IsRunning())
+    m_cec->UnregisterClients();
+
+  m_clients.clear();
 
   // delete the adapter connection
-  DELETE_AND_NULL(m_cec);
+  SAFE_DELETE(m_cec);
+
+  // delete active client
+  m_client.reset();
 }
 
 bool CLibCEC::Open(const char *strPort, uint32_t iTimeoutMs /* = CEC_DEFAULT_CONNECT_TIMEOUT */)
@@ -79,7 +86,7 @@ bool CLibCEC::Open(const char *strPort, uint32_t iTimeoutMs /* = CEC_DEFAULT_CON
   }
 
   // register all clients
-  for (vector<CCECClient *>::iterator it = m_clients.begin(); it != m_clients.end(); it++)
+  for (std::vector<CECClientPtr>::iterator it = m_clients.begin(); it != m_clients.end(); it++)
   {
     if (!m_cec->RegisterClient(*it))
     {
@@ -229,9 +236,9 @@ bool CLibCEC::GetDeviceMenuLanguage(cec_logical_address iAddress, cec_menu_langu
   return m_client ? m_client->GetDeviceMenuLanguage(iAddress, *language) : false;
 }
 
-uint64_t CLibCEC::GetDeviceVendorId(cec_logical_address iAddress)
+uint32_t CLibCEC::GetDeviceVendorId(cec_logical_address iAddress)
 {
-  return m_client ? m_client->GetDeviceVendorId(iAddress) : (uint64_t)CEC_VENDOR_UNKNOWN;
+  return m_client ? m_client->GetDeviceVendorId(iAddress) : (uint32_t)CEC_VENDOR_UNKNOWN;
 }
 
 uint16_t CLibCEC::GetDevicePhysicalAddress(cec_logical_address iAddress)
@@ -357,53 +364,54 @@ bool CLibCEC::IsValidPhysicalAddress(uint16_t iPhysicalAddress)
 void CLibCEC::CheckKeypressTimeout(void)
 {
   // check all clients
-  for (vector<CCECClient *>::iterator it = m_clients.begin(); it != m_clients.end(); it++)
+  for (std::vector<CECClientPtr>::iterator it = m_clients.begin(); it != m_clients.end(); it++)
     (*it)->CheckKeypressTimeout();
 }
 
 void CLibCEC::AddLog(const cec_log_level level, const char *strFormat, ...)
 {
-  CStdString strLog;
+  std::string strLog;
 
   // format the message
   va_list argList;
   va_start(argList, strFormat);
-  strLog.FormatV(strFormat, argList);
-  va_end(argList);
+  strLog = StringUtils::FormatV(strFormat, argList);
 
   cec_log_message message;
   message.level = level;
   message.time = GetTimeMs() - m_iStartTime;
   snprintf(message.message, sizeof(message.message), "%s", strLog.c_str());
+  va_end(argList);
 
   // send the message to all clients
-  for (vector<CCECClient *>::iterator it = m_clients.begin(); it != m_clients.end(); it++)
+  CLockObject lock(m_mutex);
+  for (std::vector<CECClientPtr>::iterator it = m_clients.begin(); it != m_clients.end(); it++)
     (*it)->AddLog(message);
 }
 
 void CLibCEC::AddCommand(const cec_command &command)
 {
   // send the command to all clients
-  for (vector<CCECClient *>::iterator it = m_clients.begin(); it != m_clients.end(); it++)
-    (*it)->AddCommand(command);
+  for (std::vector<CECClientPtr>::iterator it = m_clients.begin(); it != m_clients.end(); it++)
+    (*it)->QueueAddCommand(command);
 }
 
 void CLibCEC::Alert(const libcec_alert type, const libcec_parameter &param)
 {
   // send the alert to all clients
-  for (vector<CCECClient *>::iterator it = m_clients.begin(); it != m_clients.end(); it++)
+  for (std::vector<CECClientPtr>::iterator it = m_clients.begin(); it != m_clients.end(); it++)
     (*it)->Alert(type, param);
 }
 
-CCECClient *CLibCEC::RegisterClient(libcec_configuration &configuration)
+CECClientPtr CLibCEC::RegisterClient(libcec_configuration &configuration)
 {
   if (!m_cec)
-    return NULL;
+    return CECClientPtr();
 
   // create a new client instance
-  CCECClient *newClient = new CCECClient(m_cec, configuration);
+  CECClientPtr newClient = CECClientPtr(new CCECClient(m_cec, configuration));
   if (!newClient)
-    return NULL;
+    return newClient;
   m_clients.push_back(newClient);
 
   // if the default client isn't set, set it
@@ -417,17 +425,7 @@ CCECClient *CLibCEC::RegisterClient(libcec_configuration &configuration)
   return newClient;
 }
 
-void CLibCEC::UnregisterClients(void)
-{
-  if (m_cec && m_cec->IsRunning())
-    m_cec->UnregisterClients();
-
-  m_clients.clear();
-
-  DELETE_AND_NULL(m_client);
-}
-
-void * CECInitialise(libcec_configuration *configuration)
+ICECAdapter* CECInitialise(libcec_configuration *configuration)
 {
   if (!configuration)
     return NULL;
@@ -436,7 +434,7 @@ void * CECInitialise(libcec_configuration *configuration)
   CLibCEC *lib = new CLibCEC;
 
   // register a new client
-  CCECClient *client(NULL);
+  CECClientPtr client;
   if (lib && configuration)
     client = lib->RegisterClient(*configuration);
 
@@ -447,7 +445,7 @@ void * CECInitialise(libcec_configuration *configuration)
   // ensure that the correct server version is set
   configuration->serverVersion = LIBCEC_VERSION_CURRENT;
 
-  return static_cast< void* > (lib);
+  return static_cast<ICECAdapter*> (lib);
 }
 
 void * CECInit(const char *strDeviceName, CEC::cec_device_type_list types)
@@ -494,7 +492,7 @@ bool CECStartBootloader(void)
 
 void CECDestroy(CEC::ICECAdapter *instance)
 {
-  DELETE_AND_NULL(instance);
+  SAFE_DELETE(instance);
 }
 
 bool CLibCEC::GetDeviceInformation(const char *strPort, libcec_configuration *config, uint32_t iTimeoutMs /* = CEC_DEFAULT_CONNECT_TIMEOUT */)
@@ -576,4 +574,44 @@ int8_t CLibCEC::DetectAdapters(cec_adapter_descriptor *deviceList, uint8_t iBufS
     }
   }
   return iAdaptersFound;
+}
+
+inline bool HexStrToInt(const std::string& data, uint8_t& value)
+{
+  int iTmp(0);
+  if (sscanf(data.c_str(), "%x", &iTmp) == 1)
+  {
+    if (iTmp > 256)
+      value = 255;
+    else if (iTmp < 0)
+      value = 0;
+    else
+      value = (uint8_t) iTmp;
+
+    return true;
+  }
+
+  return false;
+}
+
+cec_command CLibCEC::CommandFromString(const char* strCommand)
+{
+  std::vector<std::string> splitCommand = StringUtils::Split(strCommand, ":");
+  cec_command retval;
+  unsigned long tmpVal;
+
+  for (std::vector<std::string>::const_iterator it = splitCommand.begin(); it != splitCommand.end(); ++it)
+  {
+    tmpVal = strtoul((*it).c_str(), NULL, 16);
+    if (tmpVal <= 0xFF)
+      retval.PushBack((uint8_t)tmpVal);
+  }
+
+  return retval;
+}
+
+void CLibCEC::PrintVersion(uint32_t version, char* buf, size_t bufSize)
+{
+  std::string strVersion = CCECTypeUtils::VersionToString(version);
+  snprintf(buf, bufSize, "%s", strVersion.c_str());
 }

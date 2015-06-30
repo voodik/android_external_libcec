@@ -1,7 +1,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -18,7 +18,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301  USA
  *
  *
  * Alternatively, you can license this library under a commercial license,
@@ -35,19 +36,17 @@
 #if defined(HAVE_TDA995X_API)
 #include "TDA995xCECAdapterCommunication.h"
 
-#include "lib/CECTypeUtils.h"
-#include "lib/LibCEC.h"
-#include "lib/platform/sockets/cdevsocket.h"
-#include "lib/platform/util/StdString.h"
-#include "lib/platform/util/buffer.h"
+#include "CECTypeUtils.h"
+#include "LibCEC.h"
+#include "platform/sockets/cdevsocket.h"
+#include "platform/util/buffer.h"
 
 extern "C" {
 #define __cec_h__
-#include <../comps/tmdlHdmiCEC/inc/tmdlHdmiCEC_Types.h>
-#include <../tda998x_ioctl.h>
+#include <comps/tmdlHdmiCEC/inc/tmdlHdmiCEC_Types.h>
+#include <tda998x_ioctl.h>
 }
 
-using namespace std;
 using namespace CEC;
 using namespace PLATFORM;
 

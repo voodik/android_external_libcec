@@ -1,7 +1,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -18,7 +18,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301  USA
  *
  *
  * Alternatively, you can license this library under a commercial license,
@@ -30,15 +31,13 @@
  *     http://www.pulse-eight.net/
  */
 
-#include "env.h"
-#include "lib/platform/sockets/serialport.h"
-#include "lib/platform/util/baudrate.h"
-#include "lib/platform/util/timeutils.h"
+#include "../sockets/serialport.h"
+#include "../util/baudrate.h"
+#include "platform/util/timeutils.h"
 
-using namespace std;
 using namespace PLATFORM;
 
-void FormatWindowsError(int iErrorCode, std::string &strMessage)
+void FormatWindowsError(int iErrorCode, std::string& strMessage)
 {
   if (iErrorCode != ERROR_SUCCESS)
   {
@@ -54,31 +53,30 @@ bool CSerialSocket::SetTimeouts(serial_socket_t socket, int* iError, DWORD iTime
   if (socket == INVALID_HANDLE_VALUE)
 	  return false;
 
-  if (iTimeoutMs == m_iCurrentReadTimeout)
-    return true;
-
   COMMTIMEOUTS cto;
+  if (!GetCommTimeouts(socket, &cto))
+  {
+    *iError = GetLastError();
+    return false;
+  }
+
   if (iTimeoutMs == 0)
   {
-    cto.ReadIntervalTimeout         = MAXDWORD;
-    cto.ReadTotalTimeoutConstant    = 0;
-    cto.ReadTotalTimeoutMultiplier  = 0;
+	  cto.ReadIntervalTimeout       = MAXDWORD;
+	  cto.ReadTotalTimeoutConstant  = 0;
+	  cto.ReadTotalTimeoutMultiplier = 0;
   }
   else
   {
-    cto.ReadIntervalTimeout         = 0;
-    cto.ReadTotalTimeoutConstant    = iTimeoutMs;
-    cto.ReadTotalTimeoutMultiplier  = 0;
+	  cto.ReadIntervalTimeout        = 0;
+	  cto.ReadTotalTimeoutConstant   = iTimeoutMs;
+	  cto.ReadTotalTimeoutMultiplier = 0;
   }
 
   if (!SetCommTimeouts(socket, &cto))
   {
     *iError = GetLastError();
     return false;
-  }
-  else
-  {
-    m_iCurrentReadTimeout = iTimeoutMs;
   }
 
   return true;
@@ -100,28 +98,12 @@ void CSerialSocket::Shutdown(void)
 
 ssize_t CSerialSocket::Write(void* data, size_t len)
 {
-  if (IsOpen())
-  {
-    ssize_t iReturn = SerialSocketWrite(m_socket, &m_iError, data, len);
-    if (iReturn != (ssize_t)len)
-    {
-      m_strError = "unable to write to the serial port";
-      FormatWindowsError(GetLastError(), m_strError);
-    }
-    return iReturn;
-  }
-  return -1;
+  return IsOpen() ? SerialSocketWrite(m_socket, &m_iError, data, len) : -1;
 }
 
 ssize_t CSerialSocket::Read(void* data, size_t len, uint64_t iTimeoutMs /* = 0 */)
 {
-  DWORD dwTimeoutMs((DWORD)iTimeoutMs);
-  if (iTimeoutMs != (uint64_t)iTimeoutMs)
-    dwTimeoutMs = MAXDWORD;
-
-  return IsOpen() && SetTimeouts(m_socket, &m_iError, dwTimeoutMs) ?
-    SerialSocketRead(m_socket, &m_iError, data, len, iTimeoutMs) :
-    -1;
+  return IsOpen() ? SerialSocketRead(m_socket, &m_iError, data, len, iTimeoutMs) : -1;
 }
 
 bool CSerialSocket::Open(uint64_t iTimeoutMs /* = 0 */)
@@ -171,7 +153,7 @@ bool CSerialSocket::Open(uint64_t iTimeoutMs /* = 0 */)
     return false;
   }
 
-  if (!SetTimeouts(m_socket, &m_iError, 0))
+  if (!SetTimeouts(m_socket, &m_iError, false))
   {
     m_strError = "unable to set timeouts";
     FormatWindowsError(GetLastError(), m_strError);
@@ -179,7 +161,6 @@ bool CSerialSocket::Open(uint64_t iTimeoutMs /* = 0 */)
     return false;
   }
 
-  m_strError.clear();
   m_bIsOpen = true;
   return m_bIsOpen;
 }

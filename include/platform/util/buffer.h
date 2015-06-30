@@ -2,7 +2,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2012 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -31,7 +31,7 @@
  *     http://www.pulse-eight.net/
  */
 
-#include "lib/platform/threads/mutex.h"
+#include "../threads/mutex.h"
 #include <queue>
 
 namespace PLATFORM
@@ -42,7 +42,7 @@ namespace PLATFORM
     public:
       SyncedBuffer(size_t iMaxSize = 100) :
           m_maxSize(iMaxSize),
-          m_bHasMessages(false) {}
+          m_bHasData(false) {}
 
       virtual ~SyncedBuffer(void)
       {
@@ -54,7 +54,7 @@ namespace PLATFORM
         CLockObject lock(m_mutex);
         while (!m_buffer.empty())
           m_buffer.pop();
-        m_bHasMessages = true;
+        m_bHasData = false;
         m_condition.Broadcast();
       }
 
@@ -67,7 +67,7 @@ namespace PLATFORM
       bool IsEmpty(void)
       {
         CLockObject lock(m_mutex);
-        return m_buffer.empty();
+        return !m_bHasData;
       }
 
       bool Push(_BType entry)
@@ -77,51 +77,33 @@ namespace PLATFORM
           return false;
 
         m_buffer.push(entry);
-        m_bHasMessages = true;
+        m_bHasData = true;
         m_condition.Signal();
         return true;
       }
 
-      bool Pop(_BType &entry, uint32_t iTimeoutMs = 0)
+      bool Pop(_BType &entry, int32_t iTimeoutMs = 0)
       {
-        bool bReturn(false);
         CLockObject lock(m_mutex);
-
-        // wait for a signal if the buffer is empty
-        if (m_buffer.empty() && iTimeoutMs > 0)
+        if (m_buffer.empty())
         {
-          if (!m_condition.Wait(m_mutex, m_bHasMessages, iTimeoutMs))
-            return bReturn;
+          if (iTimeoutMs == 0)
+            return false;
+          if (!m_condition.Wait(m_mutex, m_bHasData, iTimeoutMs))
+            return false;
         }
 
-        // pop the first item
-        m_bHasMessages = !m_buffer.empty();
-        if (!m_buffer.empty())
-        {
-          entry = m_buffer.front();
-          m_buffer.pop();
-          bReturn = true;
-        }
-        return bReturn;
-      }
-
-      bool Peek(_BType &entry)
-      {
-        bool bReturn(false);
-        CLockObject lock(m_mutex);
-        if (!m_buffer.empty())
-        {
-          entry = m_buffer.front();
-          bReturn = true;
-        }
-        return bReturn;
+        entry = m_buffer.front();
+        m_buffer.pop();
+        m_bHasData = !m_buffer.empty();
+        return true;
       }
 
     private:
       size_t             m_maxSize;
       std::queue<_BType> m_buffer;
       CMutex             m_mutex;
+      bool               m_bHasData;
       CCondition<bool>   m_condition;
-      bool               m_bHasMessages;
     };
 };

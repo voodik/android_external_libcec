@@ -3,7 +3,7 @@
  * This file is part of the libCEC(R) library.
  *
  * libCEC Exynos Code is Copyright (C) 2014 Valentin Manea
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -32,11 +32,13 @@
  *     http://www.pulse-eight.net/
  */
 
+#include "env.h"
+
 #if defined(HAVE_EXYNOS_API)
 
-#include "lib/platform/threads/mutex.h"
-#include "lib/platform/threads/threads.h"
-#include "lib/adapter/AdapterCommunication.h"
+#include "platform/threads/mutex.h"
+#include "platform/threads/threads.h"
+#include "../AdapterCommunication.h"
 #include <map>
 
 namespace CEC

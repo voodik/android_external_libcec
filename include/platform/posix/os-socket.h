@@ -2,7 +2,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2012 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -32,8 +32,8 @@
  */
 
 
-#include "lib/platform/os.h"
-#include "lib/platform/util/timeutils.h"
+#include "../os.h"
+#include "../util/timeutils.h"
 #include <stdio.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -87,7 +87,7 @@ namespace PLATFORM
     {
       FD_ZERO(&port);
       FD_SET(socket, &port);
-      ssize_t returnv = (ssize_t)select(socket + 1, NULL, &port, NULL, tv);
+      int returnv = select(socket + 1, NULL, &port, NULL, tv);
       if (returnv < 0)
       {
         *iError = errno;
@@ -115,9 +115,9 @@ namespace PLATFORM
   {
     fd_set port;
     struct timeval timeout, *tv;
-    int64_t iNow(0), iTarget(0);
     ssize_t iBytesRead(0);
     *iError = 0;
+    CTimeout readTimeout(iTimeoutMs);
 
     if (socket == INVALID_SOCKET_VALUE)
     {
@@ -125,13 +125,7 @@ namespace PLATFORM
       return -EINVAL;
     }
 
-    if (iTimeoutMs > 0)
-    {
-      iNow    = GetTimeMs();
-      iTarget = iNow + (int64_t) iTimeoutMs;
-    }
-
-    while (iBytesRead >= 0 && iBytesRead < (ssize_t)len && (iTimeoutMs == 0 || iTarget > iNow))
+    while (iBytesRead >= 0 && iBytesRead < (ssize_t)len && (iTimeoutMs == 0 || readTimeout.TimeLeft() > 0))
     {
       if (iTimeoutMs == 0)
       {
@@ -139,14 +133,15 @@ namespace PLATFORM
       }
       else
       {
-        timeout.tv_sec  = ((long int)iTarget - (long int)iNow) / (long int)1000.;
-        timeout.tv_usec = ((long int)iTarget - (long int)iNow) % (long int)1000.;
+        long iTimeLeft = (long)readTimeout.TimeLeft();
+        timeout.tv_sec  = iTimeLeft / (long int)1000.;
+        timeout.tv_usec = iTimeLeft % (long int)1000.;
         tv = &timeout;
       }
 
       FD_ZERO(&port);
       FD_SET(socket, &port);
-      ssize_t returnv = (ssize_t)select(socket + 1, &port, NULL, NULL, tv);
+      int32_t returnv = select(socket + 1, &port, NULL, NULL, tv);
 
       if (returnv == -1)
       {
@@ -166,9 +161,6 @@ namespace PLATFORM
       }
 
       iBytesRead += returnv;
-
-      if (iTimeoutMs > 0)
-        iNow = GetTimeMs();
     }
 
     return iBytesRead;
@@ -188,6 +180,7 @@ namespace PLATFORM
     return iReturn;
   }
   //@}
+
 
   // TCP
   //@{
@@ -239,16 +232,16 @@ namespace PLATFORM
     fds.events = POLLIN;
     fds.revents = 0;
 
-    while (iBytesRead >= 0 && iBytesRead < (ssize_t)len && (iTimeoutMs == 0 || iTarget > iNow))
+    while (iBytesRead >= 0 &&
+        iBytesRead < (ssize_t)len &&
+        (iTimeoutMs == 0 || iTarget > iNow) &&
+        *iError == 0)
     {
       if (iTimeoutMs > 0)
       {
-        int iPollResult = poll(&fds, 1, (int)(iTarget - iNow));
+        int iPollResult = poll(&fds, 1, iTarget - iNow);
         if (iPollResult == 0)
-        {
           *iError = ETIMEDOUT;
-          return -ETIMEDOUT;
-        }
       }
 
       ssize_t iReadResult = (iTimeoutMs > 0) ?
@@ -259,12 +252,11 @@ namespace PLATFORM
         if (errno == EAGAIN && iTimeoutMs > 0)
           continue;
         *iError = errno;
-        return -errno;
+        return (iBytesRead > 0) ? iBytesRead : -errno;
       }
       else if (iReadResult == 0 || (iReadResult != (ssize_t)len && iTimeoutMs == 0))
       {
         *iError = ECONNRESET;
-        return -ECONNRESET;
       }
 
       iBytesRead += iReadResult;
@@ -273,7 +265,7 @@ namespace PLATFORM
         iNow = GetTimeMs();
     }
 
-    if (iBytesRead < (ssize_t)len)
+    if (iBytesRead < (ssize_t)len && iError == 0)
       *iError = ETIMEDOUT;
     return iBytesRead;
   }
@@ -310,7 +302,9 @@ namespace PLATFORM
   inline bool TcpConnectSocket(tcp_socket_t socket, struct addrinfo* addr, int *iError, uint64_t iTimeout = 0)
   {
     *iError = 0;
+    SocketSetBlocking(socket, false);
     int iConnectResult = connect(socket, addr->ai_addr, addr->ai_addrlen);
+    SocketSetBlocking(socket, true);
     if (iConnectResult == -1)
     {
       if (errno == EINPROGRESS)
@@ -320,14 +314,17 @@ namespace PLATFORM
         pfd.events = POLLOUT;
         pfd.revents = 0;
 
-        int iPollResult = poll(&pfd, 1, (int)iTimeout);
+        int iPollResult = poll(&pfd, 1, iTimeout);
         if (iPollResult == 0)
           *iError = ETIMEDOUT;
         else if (iPollResult == -1)
           *iError = errno;
 
-        socklen_t errlen = sizeof(int);
-        getsockopt(socket, SOL_SOCKET, SO_ERROR, (void *)iError, &errlen);
+        if (*iError == 0)
+        {
+          socklen_t errlen = sizeof(int);
+          getsockopt(socket, SOL_SOCKET, SO_ERROR, (void *)iError, &errlen);
+        }
       }
       else
       {

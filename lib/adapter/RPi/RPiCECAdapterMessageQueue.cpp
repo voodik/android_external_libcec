@@ -1,7 +1,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -18,7 +18,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301  USA
  *
  *
  * Alternatively, you can license this library under a commercial license,
@@ -39,16 +40,14 @@
 //#define RPI_USE_SEND_MESSAGE2
 
 #include "RPiCECAdapterCommunication.h"
-#include "lib/LibCEC.h"
-#include "lib/CECTypeUtils.h"
-#include "lib/platform/util/StdString.h"
+#include "LibCEC.h"
+#include "CECTypeUtils.h"
 
 extern "C" {
 #include <interface/vmcs_host/vc_cecservice.h>
 #include <interface/vchiq_arm/vchiq.h>
 }
 
-using namespace std;
 using namespace CEC;
 using namespace PLATFORM;
 
@@ -117,7 +116,7 @@ void CRPiCECAdapterMessageQueue::MessageReceived(cec_opcode opcode, cec_logical_
   bool bHandled(false);
   CLockObject lock(m_mutex);
   /* send the received message to each entry in the queue until it is handled */
-  for (map<uint64_t, CRPiCECAdapterMessageQueueEntry *>::iterator it = m_messages.begin(); !bHandled && it != m_messages.end(); it++)
+  for (std::map<uint64_t, CRPiCECAdapterMessageQueueEntry *>::iterator it = m_messages.begin(); !bHandled && it != m_messages.end(); it++)
     bHandled = it->second->MessageReceived(opcode, initiator, destination, response);
 
   if (!bHandled)
@@ -137,7 +136,7 @@ cec_adapter_message_state CRPiCECAdapterMessageQueue::Write(const cec_command &c
   {
     CLockObject lock(m_mutex);
     iEntryId = m_iNextMessage++;
-    m_messages.insert(make_pair(iEntryId, entry));
+    m_messages.insert(std::make_pair(iEntryId, entry));
   }
 
 #if defined(RPI_USE_SEND_MESSAGE2)
@@ -157,10 +156,10 @@ cec_adapter_message_state CRPiCECAdapterMessageQueue::Write(const cec_command &c
   }
 
 #ifdef CEC_DEBUGGING
-  CStdString strDump;
-  strDump.Format("len = %d, payload = %X%X", message.length, (int)message.initiator, (int)message.follower);
+  std::string strDump;
+  strDump = StringUtils::Format("len = %d, payload = %X%X", message.length, (int)message.initiator, (int)message.follower);
   for (uint8_t iPtr = 0; iPtr < message.length - 1; iPtr++)
-    strDump.AppendFormat(":%02X", message.payload[iPtr]);
+    strDump += StringUtils::Format(":%02X", message.payload[iPtr]);
   LIB_CEC->AddLog(CEC_LOG_DEBUG, "sending data: %s", strDump.c_str());
 #endif
 
@@ -180,10 +179,10 @@ cec_adapter_message_state CRPiCECAdapterMessageQueue::Write(const cec_command &c
   }
 
 #ifdef CEC_DEBUGGING
-  CStdString strDump;
-  strDump.Format("len = %d, payload = %X%X", iLength, (int)command.initiator, (int)command.destination);
+  std:string strDump;
+  strDump = StringUtils::Format("len = %d, payload = %X%X", iLength, (int)command.initiator, (int)command.destination);
   for (uint8_t iPtr = 0; iPtr < iLength; iPtr++)
-    strDump.AppendFormat(":%02X", payload[iPtr]);
+    strDump += StringUtils::Format(":%02X", payload[iPtr]);
   LIB_CEC->AddLog(CEC_LOG_DEBUG, "sending data: %s", strDump.c_str());
 #endif
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
- * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
+ * libCEC(R) is Copyright (C) 2011-2015 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
  * libCEC(R) is a trademark of Pulse-Eight Limited.
@@ -18,7 +18,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301  USA
  *
  *
  * Alternatively, you can license this library under a commercial license,
@@ -34,8 +35,8 @@
 #include "AdapterFactory.h"
 
 #include <stdio.h>
-#include "lib/LibCEC.h"
-#include "lib/CECProcessor.h"
+#include "LibCEC.h"
+#include "CECProcessor.h"
 
 #if defined(HAVE_P8_USB)
 #include "Pulse-Eight/USBCECAdapterDetection.h"
@@ -57,14 +58,13 @@
 #include "Exynos/ExynosCECAdapterCommunication.h"
 #endif
 
-using namespace std;
 using namespace CEC;
 
 int8_t CAdapterFactory::FindAdapters(cec_adapter *deviceList, uint8_t iBufSize, const char *strDevicePath /* = NULL */)
 {
   cec_adapter_descriptor devices[50];
   int8_t iReturn = DetectAdapters(devices, iBufSize, strDevicePath);
-  for (int8_t iPtr = 0; iPtr < iReturn; iPtr++)
+  for (int8_t iPtr = 0; iPtr < iReturn && iPtr < iBufSize; iPtr++)
   {
     strncpy(deviceList[iPtr].comm, devices[iPtr].strComName, sizeof(deviceList[iPtr].comm));
     strncpy(deviceList[iPtr].path, devices[iPtr].strComPath, sizeof(deviceList[iPtr].path));
