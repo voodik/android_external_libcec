@@ -38,11 +38,20 @@
 #include "ExynosCECAdapterDetection.h"
 #include "ExynosCEC.h"
 
+#include <sys/system_properties.h>
+
 using namespace CEC;
 
 bool CExynosCECAdapterDetection::FindAdapter(void)
 {
+  char cec_disable[PROP_VALUE_MAX];
+  memset(cec_disable, 0, sizeof(cec_disable));
+  __system_property_get("persist.hdmi.cec_disable", cec_disable);
+  if (!strcmp("true", cec_disable)){
+  return 0;
+  } else {
   return access(CEC_EXYNOS_PATH, 0) == 0;
+  }
 }
 
 #endif
