@@ -42,7 +42,7 @@ LOCAL_SRC_FILES := lib/CECProcessor.cpp \
                     lib/platform/adl/adl-edid.cpp \
                     lib/platform/nvidia/nv-edid.cpp
 
-LOCAL_SHARED_LIBRARIES := libdl
+LOCAL_SHARED_LIBRARIES := libdl liblog
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/lib $(LOCAL_PATH)/include
 LOCAL_CFLAGS := -O2
