@@ -45,7 +45,7 @@ LOCAL_SRC_FILES := lib/CECProcessor.cpp \
                     lib/util/StringUtils.cpp
 
 
-LOCAL_SHARED_LIBRARIES := libdl
+LOCAL_SHARED_LIBRARIES := libdl liblog
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/lib $(LOCAL_PATH)/include
 LOCAL_CFLAGS := -std=gnu++11 -O2 -pthread -frtti -fexceptions

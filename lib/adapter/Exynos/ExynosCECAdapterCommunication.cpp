@@ -44,6 +44,9 @@
 #include "LibCEC.h"
 #include "platform/util/buffer.h"
 
+#include <sys/system_properties.h>
+#include <android/log.h>
+
 using namespace CEC;
 using namespace PLATFORM;
 
@@ -159,7 +162,15 @@ cec_vendor_id CExynosCECAdapterCommunication::GetVendorId(void)
 
 uint16_t CExynosCECAdapterCommunication::GetPhysicalAddress(void)
 {
-  uint16_t phys_addr = CEC_DEFAULT_PADDR;
+
+char cecport[PROP_VALUE_MAX];
+memset(cecport, 0, sizeof(cecport));
+
+uint16_t phys_addr = CEC_DEFAULT_PADDR;
+
+if (__system_property_get("persist.kodi.hdmi_cec_port", cecport) > 0) {
+	phys_addr = CEC_DEFAULT_PADDR * atoi(cecport);
+} else {
 
   FILE *f = fopen(CEC_PADDR_NAME, "r");
   if(f) {
@@ -168,6 +179,8 @@ uint16_t CExynosCECAdapterCommunication::GetPhysicalAddress(void)
 
     fclose(f);
   }
+}
+  __android_log_print(ANDROID_LOG_VERBOSE, "LIBCEC", "GetPhysicalAddress %d", phys_addr);
   return phys_addr;
 }
 
