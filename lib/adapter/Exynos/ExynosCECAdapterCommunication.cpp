@@ -170,7 +170,7 @@ memset(cecport, 0, sizeof(cecport));
 
 uint16_t phys_addr = CEC_DEFAULT_PADDR;
 
-if (__system_property_get("persist.hdmi.cec_port", cecport) > 0) {
+if (__system_property_get("persist.kodi.hdmi_cec_port", cecport) > 0) {
 	phys_addr = CEC_DEFAULT_PADDR * atoi(cecport);
 } else {
 
