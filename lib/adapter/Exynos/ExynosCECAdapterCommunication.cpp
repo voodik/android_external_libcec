@@ -34,7 +34,7 @@
 #include "env.h"
 #include <fcntl.h>
 #include <sys/ioctl.h>
-
+#include <stdlib.h>
 
 #if defined(HAVE_EXYNOS_API)
 #include "ExynosCEC.h"
